@@ -1,5 +1,3 @@
-#Dit is een git test
-
 import RPi.GPIO as GPIO
 import time
 
@@ -58,7 +56,7 @@ def main():
     
     
     while 1:   
-        hc595_in(m1_left)
+        hc595_in(all_off)
         hc595_out()
 
 if __name__ == '__main__': # Program starting from here
