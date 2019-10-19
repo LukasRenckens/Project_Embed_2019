@@ -32,7 +32,7 @@ def hc595_out():
     GPIO.output(RCLK, GPIO.LOW)
 
 def destroy():
-    hc595_in(all_off)
+    hc595_in(0b00000000)
     hc595_out()
     GPIO.cleanup()
     
@@ -56,12 +56,15 @@ def main():
     
     
     while 1:   
-        hc595_in(all_off)
+        hc595_in(m1_left | m2_left)
         hc595_out()
+        
+
 
 if __name__ == '__main__': # Program starting from here
     try:
         main()
-    finally:
-        destroy() 
+    except KeyboardInterrupt: 
+        destroy()
+        print('end')
 #End
