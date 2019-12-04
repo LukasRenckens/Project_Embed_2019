@@ -2,7 +2,65 @@ import RPi.GPIO as GPIO
 import time
 import smbus
 import math
+import tkinter as tk
+from mpu6050 import mpu6050
 from pidcontroller import PIDController
+
+##------------------------------------------------------- Tkinter ----------------------------------------------------------------
+
+root = tk.Tk()
+frame = tk.Frame(root)
+frame.grid()
+root.title("WHEEL-E")
+
+def stop():
+    global stop
+    stop = False
+    hc595_in(0b00000000)
+    hc595_out()
+#     GPIO.cleanup()
+    print('end')
+
+def start():
+    global stop
+    stop = True
+#     GPIO.setwarnings(False)
+#     GPIO.setmode(GPIO.BCM)
+# 
+#     SDI   = 17
+#     SRCLK = 27
+#     RCLK  = 22
+# 
+#     GPIO.setup(SDI, GPIO.OUT)
+#     GPIO.setup(RCLK, GPIO.OUT)
+#     GPIO.setup(SRCLK, GPIO.OUT)
+#     GPIO.setup(21, GPIO.OUT)
+#     GPIO.setup(20, GPIO.OUT)
+#     GPIO.output(SDI, GPIO.LOW)
+#     GPIO.output(RCLK, GPIO.LOW)
+#     GPIO.output(SRCLK, GPIO.LOW)
+ 
+    main()
+
+slider1 = tk.Scale(frame, from_=-100.0, to=100.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
+slider1.grid(row=0, column=0, padx=10, pady=10)
+slider1.set(60)
+
+slider2 = tk.Scale(frame, from_=-20.0, to=20.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
+slider2.grid(row=1, column=0, padx=10, pady=10)
+slider2.set(0)
+
+slider3 = tk.Scale(frame, from_=-20.0, to=20.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
+slider3.grid(row=2, column=0, padx=10, pady=10)
+slider3.set(0)
+
+start_button = tk.Button(frame, text="Start", command=start)
+start_button.grid(row=4, column=0, pady=10, padx=10)
+start_button.config(background="lightgreen")
+
+stop_button = tk.Button(frame, text="Stop", command=stop)
+stop_button.grid(row=5, column=0, pady=10, padx=10)
+stop_button.config(background="red")
 
 ##------------------------------------------------------- GPIO -------------------------------------------------------------------
 GPIO.setwarnings(False)
@@ -58,15 +116,23 @@ m4_left = 0b00000001
 m4_right = 0b01000000
 #This backward function takes a velocity argument that is the PID value. Both motors drives backward
 def backward(velocity):
-    hc595_in(m1_right | m2_right)
-    hc595_out()
-    PWM1.ChangeDutyCycle(velocity)
-    PWM2.ChangeDutyCycle(velocity)
-#Alike the backward funtion this forward function does the same thing but moves both the motors forward.
-def forward(velocity):
+#     velocity = 100
     hc595_in(m1_left | m2_left)
     hc595_out()
     PWM1.ChangeDutyCycle(velocity)
+#     if (velocity < 80):
+#         PWM2.ChangeDutyCycle(velocity + 20)
+#     else:
+    PWM2.ChangeDutyCycle(velocity)
+#Alike the backward funtion this forward function does the same thing but moves both the motors forward.
+def forward(velocity):
+#     velocity = 100
+    hc595_in(m1_right | m2_right)
+    hc595_out()
+    PWM1.ChangeDutyCycle(velocity)
+#     if (velocity < 80):
+#         PWM2.ChangeDutyCycle(velocity + 20)
+#     else:
     PWM2.ChangeDutyCycle(velocity)
 #If the PID value is 0 (the Robot is 'balanced') it uses this equilibrium function.
 def equilibrium():
@@ -75,46 +141,93 @@ def equilibrium():
 
 ##---------------------------------------------------- Gyro/Accel----------------------------------------------------------------
 #Gyro setup
- # Power management registers
-power_mgmt_1 = 0x6b
-power_mgmt_2 = 0x6c
 
-bus = smbus.SMBus(1) # or bus = smbus.SMBus(1) for Revision 2 boards
-address = 0x68       # This is the address value read via the i2cdetect command
 
-# Now wake the 6050 up as it starts in sleep mode
-#bus.write_byte_data(address, power_mgmt_1, 0)
 
-def read_byte(adr):
-    return bus.read_byte_data(address, adr)
 
-def read_word(adr):
-    high = bus.read_byte_data(address, adr)
-    low = bus.read_byte_data(address, adr+1)
-    val = (high << 8) + low
-    return val
 
-def read_word_2c(adr):
-    val = read_word(adr)
-    if (val >= 0x8000):
-        return -((65535 - val) + 1)
-    else:
-        return val
+#some math 
+def distance(a, b):
+    return math.sqrt((a*a) + (b*b))
 
-def dist(a,b):
-    return math.sqrt((a*a)+(b*b))
-
-def get_y_rotation(x,y,z):
-    radians = math.atan2(x, dist(y,z))
+def y_rotation(x, y, z):
+    radians = math.atan2(x, distance(y, z))
     return -math.degrees(radians)
 
-def get_x_rotation(x,y,z):
-    radians = math.atan2(y, dist(x,z))
+def x_rotation(x, y, z):
+    radians = math.atan2(y, distance(x, z))
     return math.degrees(radians)
 
+#  # Power management registers
+# power_mgmt_1 = 0x6b
+# power_mgmt_2 = 0x6c
+
+# bus = smbus.SMBus(1) # or bus = smbus.SMBus(1) for Revision 2 boards
+# address = 0x68       # This is the address value read via the i2cdetect command
+
+# # Now wake the 6050 up as it starts in sleep mode
+# #bus.write_byte_data(address, power_mgmt_1, 0)
+
+# def read_byte(adr):
+#     return bus.read_byte_data(address, adr)
+
+# def read_word(adr):
+#     high = bus.read_byte_data(address, adr)
+#     low = bus.read_byte_data(address, adr+1)
+#     val = (high << 8) + low
+#     return val
+
+# def read_word_2c(adr):
+#     val = read_word(adr)
+#     if (val >= 0x8000):
+#         return -((65535 - val) + 1)
+#     else:
+#         return val
+
+# def dist(a,b):
+#     return math.sqrt((a*a)+(b*b))
+
+# def get_y_rotation(x,y,z):
+#     radians = math.atan2(x, dist(y,z))
+#     return -math.degrees(radians)
+
+# def get_x_rotation(x,y,z):
+#     radians = math.atan2(y, dist(x,z))
+#     return math.degrees(radians)
+
 ##----------------------------------------------------- Main ---------------------------------------------------------------------    
-def main():    
-    while 1:
+def main():
+    
+    sensor = mpu6050(0x68)
+    #K and K1 --> Constants used with the complementary filter
+    K = 0.98
+    K1 = 1 - K
+
+    time_diff = 0.02
+    ITerm = 0
+    
+    #Calling the MPU6050 data 
+    accel_data = sensor.get_accel_data()
+    gyro_data = sensor.get_gyro_data()
+
+    aTempX = accel_data['x']
+    aTempY = accel_data['y']
+    aTempZ = accel_data['z']
+
+    gTempX = gyro_data['x']
+    gTempY = gyro_data['y']
+    gTempZ = gyro_data['z']
+    
+    last_x = x_rotation(aTempX, aTempY, aTempZ)
+    last_y = y_rotation(aTempX, aTempY, aTempZ)
+
+    gyro_offset_x = gTempX
+    gyro_offset_y = gTempY
+
+    gyro_total_x = (last_x) - gyro_offset_x
+    gyro_total_y = (last_y) - gyro_offset_y
+    
+    while stop:
         accel_data = sensor.get_accel_data()
         gyro_data = sensor.get_gyro_data()
 
@@ -139,18 +252,22 @@ def main():
         rotation_y = y_rotation(accelX, accelY, accelZ)
         
         #Complementary Filter
-        last_x = K * (last_x + gyro_x_delta) + (K1 * rotation_x)
+        last_y = K * (last_y + gyro_y_delta) + (K1 * rotation_y)
 
         #setting the PID values. Here you can change the P, I and D values according to yiur needs
-        PID = PIDController(P=-78.5, I=1.0, D=1.0)
-        PIDx = PID.step(last_x)
+        PID = PIDController(P=slider1.get(), I=slider2.get(), D=slider3.get())
+        PIDx = PID.step(last_y)
 
         #if the PIDx data is lower than 0.0 than move appropriately backward
         if PIDx < 0.0:
+            if (PIDx < -100):
+                PIDx = -100
             backward(-float(PIDx))
             #StepperFor(-PIDx)
         #if the PIDx data is higher than 0.0 than move appropriately forward
         elif PIDx > 0.0:
+            if (PIDx > 100):
+                PIDx = 100
             forward(float(PIDx))
             #StepperBACK(PIDx)
         #if none of the above statements is fulfilled than do not move at all 
@@ -158,8 +275,9 @@ def main():
             equilibrium()
 
 
-        print(int(last_x), 'PID: ', int(PIDx))
-        sleep(0.02)
+        print(int(last_y), 'PID: ', int(PIDx))
+        time.sleep(0.02)
+        root.update()
         
 #         accel_xout = read_word_2c(0x3b)
 #         accel_yout = read_word_2c(0x3d)
@@ -184,7 +302,7 @@ def main():
 ##-------------------------------------------------------- End -------------------------------------------------------------------
 if __name__ == '__main__': # Program starting from here
     try:
-        main()
+        root.mainloop()
     except KeyboardInterrupt: 
         hc595_in(0b00000000)
         hc595_out()
