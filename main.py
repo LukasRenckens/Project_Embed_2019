@@ -11,55 +11,47 @@ from pidcontroller import PIDController
 root = tk.Tk()
 frame = tk.Frame(root)
 frame.grid()
-root.title("WHEEL-E")
+root.title("Balancing robot")
 
 def stop():
-    global stop
-    stop = False
+    global start
+    start = False
     hc595_in(0b00000000)
     hc595_out()
-#     GPIO.cleanup()
     print('end')
 
 def start():
-    global stop
-    stop = True
-#     GPIO.setwarnings(False)
-#     GPIO.setmode(GPIO.BCM)
-# 
-#     SDI   = 17
-#     SRCLK = 27
-#     RCLK  = 22
-# 
-#     GPIO.setup(SDI, GPIO.OUT)
-#     GPIO.setup(RCLK, GPIO.OUT)
-#     GPIO.setup(SRCLK, GPIO.OUT)
-#     GPIO.setup(21, GPIO.OUT)
-#     GPIO.setup(20, GPIO.OUT)
-#     GPIO.output(SDI, GPIO.LOW)
-#     GPIO.output(RCLK, GPIO.LOW)
-#     GPIO.output(SRCLK, GPIO.LOW)
- 
+    global start
+    start = True
     main()
+    
+labelP = tk.Label(frame, text="P")
+labelP.grid(row=0, column=0, padx=10, pady=10)
 
-slider1 = tk.Scale(frame, from_=-100.0, to=100.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
-slider1.grid(row=0, column=0, padx=10, pady=10)
+labelI = tk.Label(frame, text="I")
+labelI.grid(row=1, column=0, padx=10, pady=10)
+
+labelI = tk.Label(frame, text="D")
+labelI.grid(row=2, column=0, padx=10, pady=10)
+
+slider1 = tk.Scale(frame, from_=0.0, to=1000.0, orient=tk.HORIZONTAL, length=800, resolution=0.01)
+slider1.grid(row=0, column=1, padx=10, pady=10)
 slider1.set(60)
 
-slider2 = tk.Scale(frame, from_=-20.0, to=20.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
-slider2.grid(row=1, column=0, padx=10, pady=10)
-slider2.set(0)
+slider2 = tk.Scale(frame, from_=0.0, to=1000.0, orient=tk.HORIZONTAL, length=800, resolution=0.01)
+slider2.grid(row=1, column=1, padx=10, pady=10)
+slider2.set(1)
 
-slider3 = tk.Scale(frame, from_=-20.0, to=20.0, orient=tk.HORIZONTAL, length=1000, resolution=0.01)
-slider3.grid(row=2, column=0, padx=10, pady=10)
-slider3.set(0)
+slider3 = tk.Scale(frame, from_=0.0, to=1000.0, orient=tk.HORIZONTAL, length=800, resolution=0.01)
+slider3.grid(row=2, column=1, padx=10, pady=10)
+slider3.set(11)
 
 start_button = tk.Button(frame, text="Start", command=start)
-start_button.grid(row=4, column=0, pady=10, padx=10)
+start_button.grid(row=3, column=0, columnspan=2, pady=10, padx=10)
 start_button.config(background="lightgreen")
 
 stop_button = tk.Button(frame, text="Stop", command=stop)
-stop_button.grid(row=5, column=0, pady=10, padx=10)
+stop_button.grid(row=4, column=0, columnspan=2, pady=10, padx=10)
 stop_button.config(background="red")
 
 ##------------------------------------------------------- GPIO -------------------------------------------------------------------
@@ -120,9 +112,6 @@ def backward(velocity):
     hc595_in(m1_left | m2_left)
     hc595_out()
     PWM1.ChangeDutyCycle(velocity)
-#     if (velocity < 80):
-#         PWM2.ChangeDutyCycle(velocity + 20)
-#     else:
     PWM2.ChangeDutyCycle(velocity)
 #Alike the backward funtion this forward function does the same thing but moves both the motors forward.
 def forward(velocity):
@@ -130,9 +119,6 @@ def forward(velocity):
     hc595_in(m1_right | m2_right)
     hc595_out()
     PWM1.ChangeDutyCycle(velocity)
-#     if (velocity < 80):
-#         PWM2.ChangeDutyCycle(velocity + 20)
-#     else:
     PWM2.ChangeDutyCycle(velocity)
 #If the PID value is 0 (the Robot is 'balanced') it uses this equilibrium function.
 def equilibrium():
@@ -140,13 +126,7 @@ def equilibrium():
     hc595_out()
 
 ##---------------------------------------------------- Gyro/Accel----------------------------------------------------------------
-#Gyro setup
-
-
-
-
-
-#some math 
+#Gyro math
 def distance(a, b):
     return math.sqrt((a*a) + (b*b))
 
@@ -157,43 +137,6 @@ def y_rotation(x, y, z):
 def x_rotation(x, y, z):
     radians = math.atan2(y, distance(x, z))
     return math.degrees(radians)
-
-#  # Power management registers
-# power_mgmt_1 = 0x6b
-# power_mgmt_2 = 0x6c
-
-# bus = smbus.SMBus(1) # or bus = smbus.SMBus(1) for Revision 2 boards
-# address = 0x68       # This is the address value read via the i2cdetect command
-
-# # Now wake the 6050 up as it starts in sleep mode
-# #bus.write_byte_data(address, power_mgmt_1, 0)
-
-# def read_byte(adr):
-#     return bus.read_byte_data(address, adr)
-
-# def read_word(adr):
-#     high = bus.read_byte_data(address, adr)
-#     low = bus.read_byte_data(address, adr+1)
-#     val = (high << 8) + low
-#     return val
-
-# def read_word_2c(adr):
-#     val = read_word(adr)
-#     if (val >= 0x8000):
-#         return -((65535 - val) + 1)
-#     else:
-#         return val
-
-# def dist(a,b):
-#     return math.sqrt((a*a)+(b*b))
-
-# def get_y_rotation(x,y,z):
-#     radians = math.atan2(x, dist(y,z))
-#     return -math.degrees(radians)
-
-# def get_x_rotation(x,y,z):
-#     radians = math.atan2(y, dist(x,z))
-#     return math.degrees(radians)
 
 ##----------------------------------------------------- Main ---------------------------------------------------------------------    
 def main():
@@ -227,7 +170,7 @@ def main():
     gyro_total_x = (last_x) - gyro_offset_x
     gyro_total_y = (last_y) - gyro_offset_y
     
-    while stop:
+    while start:
         accel_data = sensor.get_accel_data()
         gyro_data = sensor.get_gyro_data()
 
@@ -254,7 +197,7 @@ def main():
         #Complementary Filter
         last_y = K * (last_y + gyro_y_delta) + (K1 * rotation_y)
 
-        #setting the PID values. Here you can change the P, I and D values according to yiur needs
+        #setting the PID values. Here you can change the P, I and D values according to your needs
         PID = PIDController(P=slider1.get(), I=slider2.get(), D=slider3.get())
         PIDx = PID.step(last_y)
 
@@ -275,29 +218,8 @@ def main():
             equilibrium()
 
 
-        print(int(last_y), 'PID: ', int(PIDx))
-        time.sleep(0.02)
+        #update GUI
         root.update()
-        
-#         accel_xout = read_word_2c(0x3b)
-#         accel_yout = read_word_2c(0x3d)
-#         accel_zout = read_word_2c(0x3f)
-# 
-#         accel_xout_scaled = accel_xout / 16384.0
-#         accel_yout_scaled = accel_yout / 16384.0
-#         accel_zout_scaled = accel_zout / 16384.0
-#         if(get_y_rotation(accel_xout_scaled, accel_yout_scaled, accel_zout_scaled) <= 5):
-#             hc595_in(m1_left | m2_left)
-#             hc595_out()
-#         elif(get_y_rotation(accel_xout_scaled, accel_yout_scaled, accel_zout_scaled) >= -5):
-#             hc595_in(m1_right | m2_right)
-#             hc595_out()
-#         else:
-#             hc595_in(all_off)
-#             hc595_out()
-# 
-#         print("x rotation: " , get_x_rotation(accel_xout_scaled, accel_yout_scaled, accel_zout_scaled))
-#         print("y rotation: " , get_y_rotation(accel_xout_scaled, accel_yout_scaled, accel_zout_scaled))
 
 ##-------------------------------------------------------- End -------------------------------------------------------------------
 if __name__ == '__main__': # Program starting from here

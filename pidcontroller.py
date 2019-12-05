@@ -1,7 +1,5 @@
-'''HARIOMHARIBOLJAIMATAJIPITAJIKIJAIJAI'''
 #Developed by Mark Tomczak (fixermark@gmail.com)
 #Python class to calculate PID values
-
 
 class PIDController:
     def __init__(self, P, I, D):
@@ -20,7 +18,7 @@ class PIDController:
     def step(self, currentValue):
         error = currentValue - self.target
 
-        output = (self.KP * error + self.KI * self.integrator + self.KD * (error - self.lastError))
+        output = (self.KP * error + self.KI * error + self.integrator + self.KD * (error - self.lastError))
 
         self.lastError = error
         self.integrator += error
