@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import time
 import smbus
 import math
+from mpu6050 import mpu6050
 from pidcontroller import PIDController
 
 ##------------------------------------------------------- GPIO -------------------------------------------------------------------
@@ -75,42 +76,84 @@ def equilibrium():
 
 ##---------------------------------------------------- Gyro/Accel----------------------------------------------------------------
 #Gyro setup
- # Power management registers
-power_mgmt_1 = 0x6b
-power_mgmt_2 = 0x6c
 
-bus = smbus.SMBus(1) # or bus = smbus.SMBus(1) for Revision 2 boards
-address = 0x68       # This is the address value read via the i2cdetect command
+sensor = mpu6050(0x68)
+#K and K1 --> Constants used with the complementary filter
+K = 0.98
+K1 = 1 - K
 
-# Now wake the 6050 up as it starts in sleep mode
-#bus.write_byte_data(address, power_mgmt_1, 0)
+time_diff = 0.02
+ITerm = 0
 
-def read_byte(adr):
-    return bus.read_byte_data(address, adr)
+#Calling the MPU6050 data 
+accel_data = sensor.get_accel_data()
+gyro_data = sensor.get_gyro_data()
 
-def read_word(adr):
-    high = bus.read_byte_data(address, adr)
-    low = bus.read_byte_data(address, adr+1)
-    val = (high << 8) + low
-    return val
+aTempX = accel_data['x']
+aTempY = accel_data['y']
+aTempZ = accel_data['z']
 
-def read_word_2c(adr):
-    val = read_word(adr)
-    if (val >= 0x8000):
-        return -((65535 - val) + 1)
-    else:
-        return val
+gTempX = gyro_data['x']
+gTempY = gyro_data['y']
+gTempZ = gyro_data['z']
 
-def dist(a,b):
-    return math.sqrt((a*a)+(b*b))
+#some math 
+def distance(a, b):
+    return math.sqrt((a*a) + (b*b))
 
-def get_y_rotation(x,y,z):
-    radians = math.atan2(x, dist(y,z))
+def y_rotation(x, y, z):
+    radians = math.atan2(x, distance(y, z))
     return -math.degrees(radians)
 
-def get_x_rotation(x,y,z):
-    radians = math.atan2(y, dist(x,z))
+def x_rotation(x, y, z):
+    radians = math.atan2(y, distance(x, z))
     return math.degrees(radians)
+
+last_x = x_rotation(aTempX, aTempY, aTempZ)
+last_y = y_rotation(aTempX, aTempY, aTempZ)
+
+gyro_offset_x = gTempX
+gyro_offset_y = gTempY
+
+gyro_total_x = (last_x) - gyro_offset_x
+gyro_total_y = (last_y) - gyro_offset_y
+
+#  # Power management registers
+# power_mgmt_1 = 0x6b
+# power_mgmt_2 = 0x6c
+
+# bus = smbus.SMBus(1) # or bus = smbus.SMBus(1) for Revision 2 boards
+# address = 0x68       # This is the address value read via the i2cdetect command
+
+# # Now wake the 6050 up as it starts in sleep mode
+# #bus.write_byte_data(address, power_mgmt_1, 0)
+
+# def read_byte(adr):
+#     return bus.read_byte_data(address, adr)
+
+# def read_word(adr):
+#     high = bus.read_byte_data(address, adr)
+#     low = bus.read_byte_data(address, adr+1)
+#     val = (high << 8) + low
+#     return val
+
+# def read_word_2c(adr):
+#     val = read_word(adr)
+#     if (val >= 0x8000):
+#         return -((65535 - val) + 1)
+#     else:
+#         return val
+
+# def dist(a,b):
+#     return math.sqrt((a*a)+(b*b))
+
+# def get_y_rotation(x,y,z):
+#     radians = math.atan2(x, dist(y,z))
+#     return -math.degrees(radians)
+
+# def get_x_rotation(x,y,z):
+#     radians = math.atan2(y, dist(x,z))
+#     return math.degrees(radians)
 
 ##----------------------------------------------------- Main ---------------------------------------------------------------------    
 def main():    
